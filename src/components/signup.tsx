@@ -175,11 +175,13 @@ export default function AgriSmartSignUp() {
           </div>
 
           {/* Divider */}
-          <div className="relative flex items-center justify-center py-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+          <div className="flex justify-center py-4">
+            <div className="relative flex items-center" style={{ width: '180px' }}>
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative bg-white px-4 text-sm text-black mx-auto">or</div>
             </div>
-            <div className="relative bg-white px-4 text-sm text-black">or</div>
           </div>
 
           {/* Google Sign Up Button */}
@@ -201,12 +203,12 @@ export default function AgriSmartSignUp() {
           </div>
 
           {/* Login Link */}
-          <div className="text-center mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
+          <div className="text-center mt-4 sm:mt-6">
             <p className="text-black text-sm sm:text-base">
               Already have an account?{' '}
               <a
                 href="/login"
-                className="font-semibold text-black hover:text-gray-700 transition-colors duration-200 hover:underline"
+                className="font-semibold text-green-600 hover:text-green-700 transition-colors duration-200 hover:underline"
               >
                 Log in here
               </a>
@@ -219,7 +221,17 @@ export default function AgriSmartSignUp() {
           <p>Join thousands of African farmers, investors, and traders</p>
           <p>transforming agriculture with AI-powered insights</p>
         </div>
+        {/* Optional: Farm-themed background elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-10 left-10 text-green-200 opacity-20 text-4xl">🌾</div>
+        <div className="absolute top-20 right-20 text-amber-200 opacity-20 text-3xl">🌻</div>
+        <div className="absolute bottom-20 left-20 text-green-200 opacity-20 text-5xl">🌱</div>
+        <div className="absolute bottom-10 right-10 text-amber-200 opacity-20 text-4xl">🌽</div>
+        <div className="absolute top-1/2 left-5 text-green-200 opacity-15 text-3xl">🍃</div>
+        <div className="absolute top-1/3 right-5 text-amber-200 opacity-15 text-3xl">🌾</div>
       </div>
     </div>
+      
+  </div> 
   );
 }
