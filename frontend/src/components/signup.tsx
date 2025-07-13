@@ -2,8 +2,13 @@
 
 import React, { useState } from 'react';
 import { User, Mail, Lock, Sprout, Users, TrendingUp, ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { doCreateUserWithEmailAndPassword, doSignInWithGoogle } from '../firebase/auth';
+import { createUserProfile, getUserProfile } from '../firebase/userService';
 
 export default function AgriSmartSignUp() {
+  const router = useRouter();
+  
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -11,6 +16,8 @@ export default function AgriSmartSignUp() {
     userRole: ''
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleInputChange = (e: { target: { name: any; value: any; }; }) => {
     setFormData({
@@ -27,14 +34,64 @@ export default function AgriSmartSignUp() {
     setIsDropdownOpen(false);
   };
 
-  const handleSubmit = () => {
-    console.log('Sign up data:', formData);
-    // Handle form submission here
+  const handleSubmit = async () => {
+    if (!formData.email || !formData.password || !formData.fullName || !formData.userRole) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Create user account with Firebase Auth
+      const userCredential = await doCreateUserWithEmailAndPassword(formData.email, formData.password);
+      const user = userCredential.user;
+      
+      // Store additional user data in Firestore
+      await createUserProfile(user.uid, {
+        fullName: formData.fullName,
+        email: formData.email,
+        userRole: formData.userRole,
+        isEmailVerified: user.emailVerified,
+      });
+      
+      router.push('/dashboard'); // or wherever you want to redirect after signup
+    } catch (error: any) {
+      setError(error.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogleSignUp = () => {
-    console.log('Continue with Google');
-    // Handle Google OAuth here
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await doSignInWithGoogle();
+      const user = result.user;
+      
+      // Check if user profile already exists
+      const userProfile = await getUserProfile(user.uid);
+      
+      if (!userProfile) {
+        // Create user profile for new Google users
+        await createUserProfile(user.uid, {
+          fullName: user.displayName || '',
+          email: user.email,
+          userRole: 'Farmer', // Default role for Google signup
+          isEmailVerified: user.emailVerified,
+          photoURL: user.photoURL || '',
+        });
+      }
+      
+      router.push('/dashboard'); // or wherever you want to redirect after signup
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getRoleIcon = (role: string) => {
@@ -72,6 +129,12 @@ export default function AgriSmartSignUp() {
           <h2 className="text-xl sm:text-2xl font-bold text-black text-center mb-4 sm:mb-6">
             Create Your AgriSmart Account
           </h2>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Full Name */}
@@ -167,10 +230,11 @@ export default function AgriSmartSignUp() {
             <button
               type="button"
               onClick={handleSubmit}
-              className="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base max-w-xs w-full"
+              disabled={loading}
+              className="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm sm:text-base max-w-xs w-full disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ minWidth: '180px' }}
             >
-              Create Account
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </div>
 
@@ -189,7 +253,8 @@ export default function AgriSmartSignUp() {
             <button
               type="button"
               onClick={handleGoogleSignUp}
-              className="bg-white border border-gray-300 text-black py-3 px-8 rounded-lg font-semibold hover:bg-gray-100 focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md text-sm sm:text-base max-w-xs w-full"
+              disabled={loading}
+              className="bg-white border border-gray-300 text-black py-3 px-8 rounded-lg font-semibold hover:bg-gray-100 focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md text-sm sm:text-base max-w-xs w-full disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ minWidth: '180px' }}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -198,7 +263,7 @@ export default function AgriSmartSignUp() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Continue with Google
+              {loading ? 'Signing in...' : 'Continue with Google'}
             </button>
           </div>
 
@@ -221,17 +286,17 @@ export default function AgriSmartSignUp() {
           <p>Join thousands of African farmers, investors, and traders</p>
           <p>transforming agriculture with AI-powered insights</p>
         </div>
-        {/* Optional: Farm-themed background elements */}
+      </div>
+
+      {/* Optional: Farm-themed background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-10 left-10 text-green-200 opacity-20 text-4xl">🌾</div>
-        <div className="absolute top-20 right-20 text-amber-200 opacity-20 text-3xl">🌻</div>
-        <div className="absolute bottom-20 left-20 text-green-200 opacity-20 text-5xl">🌱</div>
-        <div className="absolute bottom-10 right-10 text-amber-200 opacity-20 text-4xl">🌽</div>
-        <div className="absolute top-1/2 left-5 text-green-200 opacity-15 text-3xl">🍃</div>
-        <div className="absolute top-1/3 right-5 text-amber-200 opacity-15 text-3xl">🌾</div>
+        <div className="absolute top-10 left-10 text-green-200 opacity-40 text-4xl">🌾</div>
+        <div className="absolute top-20 right-20 text-amber-200 opacity-40 text-3xl">🌻</div>
+        <div className="absolute bottom-20 left-20 text-green-200 opacity-40 text-5xl">🌱</div>
+        <div className="absolute bottom-10 right-10 text-amber-200 opacity-40 text-4xl">🌽</div>
+        <div className="absolute top-1/2 left-5 text-green-200 opacity-30 text-3xl">🍃</div>
+        <div className="absolute top-1/3 right-5 text-amber-200 opacity-30 text-3xl">🌾</div>
       </div>
     </div>
-      
-  </div> 
   );
 }

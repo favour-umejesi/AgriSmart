@@ -2,14 +2,52 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sprout } from 'lucide-react';
+import { doSignInWithEmailAndPassword, doSignInWithGoogle } from '../firebase/auth';
 
 const AgriSmartLoginPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const router = useRouter();
-  
-  const handleSubmit = () => {
-    // Handle login/signup logic here
-    console.log(isLogin ? 'Login submitted' : 'Sign up submitted');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Handle login logic here
+  const handleSubmit = async (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      setErrorMessage('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      await doSignInWithEmailAndPassword(email, password);
+      router.push('/dashboard'); // or wherever you want to redirect after login
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Failed to sign in');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      await doSignInWithGoogle();
+      router.push('/dashboard'); // or wherever you want to redirect after login
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Failed to sign in with Google');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignUpRedirect = () => {
@@ -26,50 +64,57 @@ const AgriSmartLoginPage = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-green-800 mb-2 px-4">AgriSmart Africa</h1>
         <p className="text-green-600 font-medium text-sm sm:text-base px-4">Grow Smarter with AgriSmart Africa</p>
       </div>
+      
       {/* Login Form - no container */}
       <form className="w-full max-w-md mx-auto flex flex-col gap-4">
+        {errorMessage && (
+          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {errorMessage}
+          </div>
+        )}
+        
         <label className="block text-sm font-medium text-black mb-2">Email</label>
         <input 
           type="email" 
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 text-black bg-white shadow-none"
           placeholder="Enter your email" 
         />
         <label className="block text-sm font-medium text-black mb-2">Password</label>
         <input 
           type="password" 
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 text-black bg-white shadow-none"
           placeholder="Enter your password" 
         />
-        {!isLogin && (
-          <>
-            <label className="block text-sm font-medium text-black mb-2">Confirm Password</label>
-            <input 
-              type="password" 
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 text-black bg-white shadow-none"
-              placeholder="Confirm your password" 
-            />
-          </>
-        )}
+        
         <div className="flex justify-center mt-2">
           <button 
             type="button"
             onClick={handleSubmit}
-            className="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-all duration-200 shadow-none hover:shadow-none transform hover:-translate-y-0.5 text-sm sm:text-base max-w-xs w-full"
+            disabled={loading}
+            className="bg-green-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-700 focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-all duration-200 shadow-none hover:shadow-none transform hover:-translate-y-0.5 text-sm sm:text-base max-w-xs w-full disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ minWidth: '180px' }}
           >
-            {isLogin ? 'Login' : 'Sign Up'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </div>
+        
         <div className="relative flex items-center justify-center py-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300"></div>
           </div>
           <div className="relative bg-white px-4 text-sm text-black">Or continue with</div>
         </div>
+        
         <div className="flex justify-center">
           <button 
             type="button"
-            className="bg-white border border-gray-300 text-black py-3 px-8 rounded-lg font-semibold hover:bg-gray-100 focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-none hover:shadow-none text-sm sm:text-base max-w-xs w-full"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="bg-white border border-gray-300 text-black py-3 px-8 rounded-lg font-semibold hover:bg-gray-100 focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-none hover:shadow-none text-sm sm:text-base max-w-xs w-full disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ minWidth: '180px' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -78,40 +123,31 @@ const AgriSmartLoginPage = () => {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>Continue with Google</span>
+            <span>{loading ? 'Signing in...' : 'Continue with Google'}</span>
           </button>
         </div>
+        
         <div className="text-center mt-4">
           <p className="text-sm text-black">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-            {isLogin ? (
-              <button
-                type="button"
-                onClick={handleSignUpRedirect}
-                className="text-green-600 hover:text-green-700 font-medium hover:underline"
-              >
-                Sign up here
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-green-600 hover:text-green-700 font-medium hover:underline"
-              >
-                Login here
-              </button>
-            )}
+            Don't have an account?{' '}
+            <a
+              href="/signup"
+              className="text-green-600 hover:text-green-700 font-medium hover:underline cursor-pointer"
+            >
+              Sign up here
+            </a>
           </p>
         </div>
       </form>
+      
       {/* Optional: Farm-themed background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute top-10 left-10 text-green-200 opacity-20 text-4xl">🌾</div>
-        <div className="absolute top-20 right-20 text-amber-200 opacity-20 text-3xl">🌻</div>
-        <div className="absolute bottom-20 left-20 text-green-200 opacity-20 text-5xl">🌱</div>
-        <div className="absolute bottom-10 right-10 text-amber-200 opacity-20 text-4xl">🌽</div>
-        <div className="absolute top-1/2 left-5 text-green-200 opacity-15 text-3xl">🍃</div>
-        <div className="absolute top-1/3 right-5 text-amber-200 opacity-15 text-3xl">🌾</div>
+        <div className="absolute top-10 left-10 text-green-200 opacity-40 text-4xl">🌾</div>
+        <div className="absolute top-20 right-20 text-amber-200 opacity-40 text-3xl">🌻</div>
+        <div className="absolute bottom-20 left-20 text-green-200 opacity-40 text-5xl">🌱</div>
+        <div className="absolute bottom-10 right-10 text-amber-200 opacity-40 text-4xl">🌽</div>
+        <div className="absolute top-1/2 left-5 text-green-200 opacity-30 text-3xl">🍃</div>
+        <div className="absolute top-1/3 right-5 text-amber-200 opacity-30 text-3xl">🌾</div>
       </div>
     </div>
   );
