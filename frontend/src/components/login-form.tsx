@@ -133,8 +133,8 @@ const AgriSmartLoginPage = () => {
             <a
               href="/signup"
               className="text-green-600 hover:text-green-700 font-medium hover:underline cursor-pointer"
-            >
-              Sign up here
+              >
+                Sign up here
             </a>
           </p>
         </div>

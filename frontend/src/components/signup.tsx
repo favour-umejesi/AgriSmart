@@ -280,15 +280,7 @@ export default function AgriSmartSignUp() {
             </p>
           </div>
         </div>
-
-        {/* Footer Note */}
-        <div className="text-center mt-4 sm:mt-6 text-xs sm:text-sm text-black px-4">
-          <p>Join thousands of African farmers, investors, and traders</p>
-          <p>transforming agriculture with AI-powered insights</p>
-        </div>
-      </div>
-
-      {/* Optional: Farm-themed background elements */}
+        {/* Optional: Farm-themed background elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute top-10 left-10 text-green-200 opacity-40 text-4xl">🌾</div>
         <div className="absolute top-20 right-20 text-amber-200 opacity-40 text-3xl">🌻</div>
@@ -296,6 +288,12 @@ export default function AgriSmartSignUp() {
         <div className="absolute bottom-10 right-10 text-amber-200 opacity-40 text-4xl">🌽</div>
         <div className="absolute top-1/2 left-5 text-green-200 opacity-30 text-3xl">🍃</div>
         <div className="absolute top-1/3 right-5 text-amber-200 opacity-30 text-3xl">🌾</div>
+      </div>
+        {/* Footer Note */}
+        <div className="text-center mt-4 sm:mt-6 text-xs sm:text-sm text-black px-4">
+          <p>Join thousands of African farmers, investors, and traders</p>
+          <p>transforming agriculture with AI-powered insights</p>
+        </div>
       </div>
     </div>
   );
