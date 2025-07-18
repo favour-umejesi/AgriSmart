@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { Loader2, Tractor, Leaf, Package, ClipboardList, Store, Sparkles, PlusCircle, UserCog, LogOut, Menu, X, ShoppingCart, LayoutDashboard } from "lucide-react";
+import { Loader2, Tractor, Leaf, Package, ClipboardList, Store, Sparkles, PlusCircle, UserCog, LogOut, Menu, X, ShoppingCart, LayoutDashboard, Calendar, Clock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -30,6 +30,14 @@ const Dashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [userLoading, setUserLoading] = useState(true);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    dueDate: "",
+    priority: "medium"
+  });
   const router = useRouter();
 
   // Fetch user profile for name (from Firestore)
@@ -110,6 +118,27 @@ const Dashboard: React.FC = () => {
     router.push("/login");
   };
 
+  const handleAddTask = () => {
+    if (newTask.title.trim()) {
+      const task = {
+        id: Date.now(),
+        title: newTask.title,
+        description: newTask.description,
+        dueDate: new Date(newTask.dueDate),
+        priority: newTask.priority,
+        completed: false
+      };
+      setTasks(prev => [task, ...prev]);
+      setNewTask({ title: "", description: "", dueDate: "", priority: "medium" });
+      setShowAddTaskModal(false);
+    }
+  };
+
+  const handleDateSelect = (date: string) => {
+    setNewTask(prev => ({ ...prev, dueDate: date }));
+    setShowDatePicker(false);
+  };
+
   if (authLoading || loading || userLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -124,8 +153,11 @@ const Dashboard: React.FC = () => {
       <aside className={`fixed z-30 inset-y-0 left-0 w-64 bg-white shadow-lg flex flex-col transition-transform duration-200 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} sm:translate-x-0 sm:static sm:inset-auto sm:w-56`}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <span className="text-xl font-bold text-green-700">AgriSmart</span>
-          <button className="sm:hidden" onClick={() => setSidebarOpen(false)}>
-            <X className="w-6 h-6" />
+          <button 
+            className="p-1 hover:bg-gray-100 rounded" 
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
         <nav className="flex-1 px-4 py-6 space-y-2">
@@ -194,10 +226,12 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center mb-4">
                 <ClipboardList className="w-6 h-6 text-green-700 mr-2" />
                 <h2 className="text-lg font-bold">Today's Tasks</h2>
-                <Link href="/tasks" className="ml-auto text-green-600 hover:underline text-sm">View All</Link>
-                <Link href="/tasks/add" className="ml-4 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded flex items-center gap-1 text-sm font-semibold transition">
+                <button 
+                  onClick={() => setShowAddTaskModal(true)}
+                  className="ml-auto bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded flex items-center gap-1 text-sm font-semibold transition"
+                >
                   <PlusCircle className="w-4 h-4" /> Add Task
-                </Link>
+                </button>
               </div>
               {tasksLoading ? (
                 <div className="flex items-center justify-center py-6">
@@ -248,6 +282,134 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Task Modal */}
+      {showAddTaskModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Add New Task</h3>
+              <button onClick={() => setShowAddTaskModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Task Title *</label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter task title"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter task description"
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newTask.dueDate}
+                    onClick={() => setShowDatePicker(true)}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer"
+                    placeholder="Select due date"
+                  />
+                  <Calendar className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleAddTask}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-medium"
+              >
+                Add Task
+              </button>
+              <button
+                onClick={() => setShowAddTaskModal(false)}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Select Due Date</h3>
+              <button onClick={() => setShowDatePicker(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <input
+                type="date"
+                value={newTask.dueDate}
+                onChange={(e) => handleDateSelect(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                min={new Date().toISOString().split('T')[0]}
+              />
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDateSelect(new Date().toISOString().split('T')[0])}
+                  className="flex-1 bg-blue-100 text-blue-700 py-2 px-3 rounded text-sm font-medium"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    handleDateSelect(tomorrow.toISOString().split('T')[0]);
+                  }}
+                  className="flex-1 bg-blue-100 text-blue-700 py-2 px-3 rounded text-sm font-medium"
+                >
+                  Tomorrow
+                </button>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-xs text-gray-500">
+              💡 Future: Email reminders will be sent for tasks with due dates
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
